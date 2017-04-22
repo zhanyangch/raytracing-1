@@ -1,4 +1,6 @@
-EXEC = raytracing
+EXEC = raytracing \
+       raytracing-sse \
+       raytracing-avx
 
 GIT_HOOKS := .git/hooks/pre-commit
 .PHONY: all
@@ -9,7 +11,11 @@ $(GIT_HOOKS):
 	@echo
 
 CC ?= gcc
-CFLAGS = \
+CFLAGS_SSE = \
+	-msse2 -D SSE 
+CFLAGS_AVX = \
+	-mavx -D AVX 
+CFLAGS_COMM = \
 	-std=gnu99 -Wall -O0 -g -fopenmp 
 LDFLAGS = \
 	-lm -fopenmp
@@ -23,14 +29,28 @@ endif
 OBJS := \
 	objects.o \
 	raytracing.o \
-	main.o
+	main.o \
+        raytracing-sse.o\
+        main-sse.o\
+	raytracing-avx.o\
+        main-avx.o  
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $<
+raytracing-avx.o:raytracing-avx.c
+	$(CC) $(CFLAGS_COMM) $(CFLAGS_AVX)-c -o $@ $<
+raytracing-sse.o:raytracing-sse.c
+	$(CC) $(CFLAGS_COMM) $(CFLAGS_SSE)-c -o $@ $<
+raytracing.o:raytracing.c
+	$(CC) $(CFLAGS_COMM) -c -o $@ $<
 
+raytracing:main.o raytracing.o objects.o 
+	$(CC) $(CFLAGS_COMM) -o $@ $^ $(LDFLAGS)
 
-$(EXEC): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+raytracing-sse:main.o raytracing-sse.o objects.o
+	$(CC) $(CFLAGS_COMM) $(CFLAGS_SSE) -o $@ $^ $(LDFLAGS)
+
+raytracing-avx:main.o raytracing-avx.o objects.o
+	$(CC) $(CFLAGS_COMM) $(CFLAGS_AVX) -o $@ $^ $(LDFLAGS)
+
 
 main.o: use-models.h
 use-models.h: models.inc Makefile

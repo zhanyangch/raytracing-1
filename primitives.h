@@ -1,8 +1,8 @@
 #ifndef __RAY_PRIMITIVES_H
 #define __RAY_PRIMITIVES_H
 
-typedef double point3[3];
-typedef double point4[3];
+typedef double point3[4];
+typedef double point4[4];
 typedef double color[3];
 
 typedef struct {

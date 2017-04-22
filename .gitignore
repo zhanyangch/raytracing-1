@@ -3,5 +3,7 @@
 *.pch
 *.out
 raytracing
+raytracing-sse
+raytracing-avx
 use-models.h
 out.ppm

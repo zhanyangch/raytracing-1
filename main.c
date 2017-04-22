@@ -4,7 +4,14 @@
 #include <time.h>
 
 #include "primitives.h"
+
+#ifdef SSE
+#include "raytracing-sse.h"
+#elif defined AVX
+#include "raytracing-avx.h"
+#else
 #include "raytracing.h"
+#endif
 
 #define OUT_FILENAME "out.ppm"
 
