@@ -36,11 +36,12 @@ static int raySphereIntersection(const point3 ray_e,
     float q = sqrt(r2 - m2);
     *t1 = (l2 > r2) ? (s - q) : (s + q);
     /* p = e + t1 * d */
-    multiply_vector(ray_d, *t1, ip->point);
-    add_vector(ray_e, ip->point, ip->point);
-
-    subtract_vector(ip->point, sph->center, ip->normal);
-    normalize(ip->normal);
+    //multiply_vector(ray_d, *t1, ip->point);
+    //add_vector(ray_e, ip->point, ip->point);
+    multiply_vector_add(ray_d, *t1, ray_e, ip->point);
+    //subtract_vector(ip->point, sph->center, ip->normal);
+    //normalize(ip->normal);
+    subtract_vector_normalize(ip->point, sph->center, ip->normal);
     if (dot_product(ip->normal, ray_d) > 0.0)
         multiply_vector(ip->normal, -1, ip->normal);
     return 1;
@@ -120,9 +121,9 @@ static int rayRectangularIntersection(const point3 ray_e,
     COPY_POINT3(ip->normal, rec->normal);
     if (dot_product(ip->normal, ray_d)>0.0)
         multiply_vector(ip->normal, -1, ip->normal);
-    multiply_vector(ray_d, *t1, ip->point);
-    add_vector(ray_e, ip->point, ip->point);
-
+    //multiply_vector(ray_d, *t1, ip->point);
+    //add_vector(ray_e, ip->point, ip->point);
+    multiply_vector_add(ray_d, *t1, ray_e,ip->point);
     return 1;
 }
 
@@ -167,21 +168,21 @@ static void compute_specular_diffuse(double *diffuse,
 
     /* Calculate vector to eye V */
     COPY_POINT3(d_copy, d);
-    multiply_vector(d_copy, -1, d_copy);
-    normalize(d_copy);
-
+    //multiply_vector(d_copy, -1, d_copy);
+    //normalize(d_copy);
+    multiply_vector_normalize(d_copy, -1, d_copy);
     /* Calculate vector to light L */
     COPY_POINT3(l_copy, l);
-    multiply_vector(l_copy, -1, l_copy);
-    normalize(l_copy);
-
+    //multiply_vector(l_copy, -1, l_copy);
+    //normalize(l_copy);
+    multiply_vector_normalize(l_copy, -1, l_copy);
     /* Calculate reflection direction R */
     double tmp = dot_product(n, l_copy);
     multiply_vector(n, tmp, middle);
     multiply_vector(middle, 2, middle);
-    subtract_vector(middle, l_copy, r);
-    normalize(r);
-
+    //subtract_vector(middle, l_copy, r);
+    //normalize(r);
+    subtract_vector_normalize(middle, l_copy, r);
     /* diffuse = max(0, dot_product(n, -l)) */
     *diffuse = MAX(0, dot_product(n, l_copy));
 
@@ -196,8 +197,9 @@ static void compute_specular_diffuse(double *diffuse,
 static void reflection(point3 r, const point3 d, const point3 n)
 {
     /* r = d - 2(d . n)n */
-    multiply_vector(n, -2.0 * dot_product(d, n), r);
-    add_vector(r, d, r);
+    //multiply_vector(n, -2.0 * dot_product(d, n), r);
+    //add_vector(r, d, r);
+    multiply_vector_add(n, -2.0 * dot_product(d, n), d, r);
 }
 
 /* reference: https://www.opengl.org/sdk/docs/man/html/refract.xhtml */
@@ -254,9 +256,9 @@ static intersection ray_hit_object(const point3 e, const point3 d,
     *hit_sphere = NULL;
 
     point3 biased_e;
-    multiply_vector(d, t0, biased_e);
-    add_vector(biased_e, e, biased_e);
-
+    //multiply_vector(d, t0, biased_e);
+    //add_vector(biased_e, e, biased_e);
+    multiply_vector_add(d, t0, e, biased_e);
     double nearest = t1;
     intersection result, tmpresult;
 
@@ -308,13 +310,14 @@ static void rayConstruction(point3 d, const point3 u, const point3 v,
     multiply_vector(u, u_s, u_tmp);
     multiply_vector(v, v_s, v_tmp);
     multiply_vector(w, w_s, w_tmp);
-    add_vector(view->vrp, u_tmp, s);
-    add_vector(s, v_tmp, s);
-    add_vector(s, w_tmp, s);
-
+    //add_vector(view->vrp, u_tmp, s);
+    //add_vector(s, v_tmp, s);
+    //add_vector(s, w_tmp, s);
+    add_vectors4(view->vrp, u_tmp, v_tmp,w_tmp, s);
     /* p(t) = e + td = e + t(s - e) */
-    subtract_vector(s, view->vrp, d);
-    normalize(d);
+    //subtract_vector(s, view->vrp, d);
+    //normalize(d);
+    subtract_vector_normalize(s, view->vrp, d);
 }
 
 static void calculateBasisVectors(point3 u, point3 v, point3 w,
@@ -325,13 +328,13 @@ static void calculateBasisVectors(point3 u, point3 v, point3 w,
     normalize(w);
 
     /* u = (t x w) / (|t x w|) */
-    cross_product(w, view->vup, u);
-    normalize(u);
-
+    //cross_product(w, view->vup, u);
+    //normalize(u);
+    cross_product_normalize(w, view->vup, u);
     /* v = w x u */
-    cross_product(u, w, v);
-
-    normalize(v);
+    //cross_product(u, w, v);
+    //normalize(v);
+    cross_product_normalize(u, w, v);
 }
 
 /* @brief protect color value overflow */
@@ -382,8 +385,9 @@ static unsigned int ray_color(const point3 e, double t,
     for (light_node light = lights; light; light = light->next) {
         /* calculate the intersection vector pointing at the light */
         subtract_vector(ip.point, light->element.position, l);
-        multiply_vector(l, -1, _l);
-        normalize(_l);
+        //multiply_vector(l, -1, _l);
+        //normalize(_l);
+        multiply_vector_normalize(l, -1, _l);
         /* check for intersection with an object. use ignore_me
          * because we don't care about this normal
         */
@@ -427,10 +431,11 @@ static unsigned int ray_color(const point3 e, double t,
         if (ray_color(ip.point, MIN_DISTANCE, r, stk, rectangulars, spheres,
                       lights, reflection_part,
                       bounces_left - 1)) {
-            multiply_vector(reflection_part, R * (1.0 - fill.Kd) * fill.R,
-                            reflection_part);
-            add_vector(object_color, reflection_part,
-                       object_color);
+            //multiply_vector(reflection_part, R * (1.0 - fill.Kd) * fill.R,
+            //                reflection_part);
+            //add_vector(object_color, reflection_part,
+            //           object_color);
+            multiply_vector_add(reflection_part, R * (1.0 - fill.Kd) * fill.R, object_color, object_color);//todo:check correct?
         }
         stk->top = old_top;
     }
@@ -441,10 +446,11 @@ static unsigned int ray_color(const point3 e, double t,
         if (ray_color(ip.point, MIN_DISTANCE, rr, stk,rectangulars, spheres,
                       lights, refraction_part,
                       bounces_left - 1)) {
-            multiply_vector(refraction_part, (1 - R) * fill.T,
-                            refraction_part);
-            add_vector(object_color, refraction_part,
-                       object_color);
+            //multiply_vector(refraction_part, (1 - R) * fill.T,
+            //                refraction_part);
+            //add_vector(object_color, refraction_part,
+            //           object_color);
+            multiply_vector_add(refraction_part, (1 - R) * fill.T, object_color, object_color);
         }
     }
 
@@ -467,7 +473,7 @@ void raytracing(uint8_t *pixels, color background_color,
     idx_stack stk;
 
     int factor = sqrt(SAMPLES);
-    #pragma omp parallel for num_threads (2) private(stk,object_color,d)
+//    #pragma omp parallel for num_threads (2) private(stk,object_color,d)
     for (int j = 0; j < height; j++) {
         for (int i = 0; i < width; i++) {
             double r = 0, g = 0, b = 0;
